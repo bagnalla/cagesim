@@ -24,7 +24,7 @@ namespace cagesim
             max_cost = numResources * nPlayers;
         }
 
-        std::function<float(size_t, size_t, const std::vector<size_t>&)> GetCostFunction() { return cost; }
+        std::function<float(size_t, size_t, const std::vector<size_t>&)> GetCostFunction() const { return cost; }
     private:
         size_t numResources;
 

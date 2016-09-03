@@ -43,9 +43,10 @@ int main()
 
     std::cout << "begin" << std::endl;
 
-    std::thread simThread (runSim, std::ref(averageData));
+    runSim(averageData);
 
-    simThread.join();
+    //std::thread simThread (runSim, std::ref(averageData));
+    //simThread.join();
 
     std::cout << "end" << std::endl;
     return 0;

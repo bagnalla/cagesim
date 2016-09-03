@@ -16,16 +16,15 @@ namespace cagesim
     class Player
     {
     public:
-        Player(size_t i, float e, Strategy *strat, GameData *gd);
-        size_t ChooseStrategy();
-        void Update(const std::vector<size_t>& s);
-        void PrintDist();
+        Player(size_t i, float e, Strategy *strat);
+        size_t ChooseStrategy() const;
+        void Update(const std::vector<size_t>& s, GameData& gd);
+        void PrintDist() const;
     private:
         size_t id;
         float epsilon;
         Strategy *strategy;
         std::vector<double> weights;
-        GameData *gameData; // all players have pointer to the same GameData object
     };
 }
 

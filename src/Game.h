@@ -15,8 +15,8 @@ namespace cagesim
     struct GameData
     {
         // per round, per player, per strategy
-        std::vector<std::vector<std::vector<float> > > strategyCosts;
-        std::vector<std::vector<std::vector<float> > > strategyWeights;
+        std::vector<std::vector<std::vector<float>>> strategyCosts;
+        std::vector<std::vector<std::vector<float>>> strategyWeights;
 
         void AddRound(size_t numPlayers, size_t numStrategies)
         {
@@ -41,11 +41,11 @@ namespace cagesim
         {
             strategy = strat;
             for (size_t i = 0; i < strat->GetNumPlayers(); ++i) {
-                players.push_back(Player(i, e, strat, &gameData));
+                players.push_back(Player(i, e, strat));
             }
             t = 0;
 
-            gameData.AddRound(players.size(), strategy->GetNumStrategies());
+            gameData.AddRound(strat->GetNumPlayers(), strat->GetNumStrategies());
         }
 
 //        ~Game()
@@ -63,8 +63,8 @@ namespace cagesim
                 s[i] = players[i].ChooseStrategy();
             }
 
-            for (size_t i = 0; i < players.size(); ++i) {
-                players[i].Update(s);
+            for (auto it = players.begin(); it != players.end(); ++it) {
+                it->Update(s, gameData);
             }
 
             ++t;
@@ -77,7 +77,7 @@ namespace cagesim
             }
         }
 
-        GameData gameData;
+        //GameData gameData;
 
     private:
         Game() {}
@@ -86,6 +86,7 @@ namespace cagesim
         std::vector<Player> players;
 
         size_t t; // round counter
+        GameData gameData;
 
 //        void initNextRoundGameData()
 //        {

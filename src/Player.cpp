@@ -2,6 +2,7 @@
 // Created by alex on 9/2/16.
 //
 
+#include <cassert>
 #include <cmath>
 #include <cstdlib>
 #include <functional>
@@ -11,16 +12,15 @@
 
 namespace cagesim
 {
-    Player::Player(size_t i, float e, Strategy *strat, GameData *gd)
+    Player::Player(size_t i, float e, Strategy *strat)
     {
         id = i;
         epsilon = e;
         strategy = strat;
-        gameData = gd;
         weights = std::vector<double>(strat->GetNumStrategies(), 1.0f);
     }
 
-    size_t Player::ChooseStrategy()
+    size_t Player::ChooseStrategy() const
     {
         double sum_weights = 0.0;
         for (size_t i = 0; i < weights.size(); ++i) {
@@ -41,7 +41,7 @@ namespace cagesim
         throw std::runtime_error("player " + std::to_string(id) + " unable to choose a strategy.");
     }
 
-    void Player::Update(const std::vector<size_t>& s)
+    void Player::Update(const std::vector<size_t>& s, GameData& gd)
     {
         auto costFun = strategy->GetCostFunction();
 
@@ -50,12 +50,14 @@ namespace cagesim
             weights[i] *= pow(1.0 - epsilon, c);
 
             // update gameData with cost and weight
-            gameData->strategyCosts[gameData->strategyCosts.size() - 1][id][i] = c;
-            gameData->strategyWeights[gameData->strategyCosts.size() - 1][id][i] = weights[i];
+            auto dfgdfg = gd.strategyCosts.size();
+            assert(0 < gd.strategyCosts.size() && gd.strategyCosts.size() < UINT32_MAX);
+            gd.strategyCosts[gd.strategyCosts.size() - 1][id][i] = c;
+            gd.strategyWeights[gd.strategyCosts.size() - 1][id][i] = static_cast<float>(weights[i]);
         }
     }
 
-    void Player::PrintDist()
+    void Player::PrintDist() const
     {
         double sum_weights = 0.0;
         for (size_t i = 0; i < weights.size(); ++i) {
