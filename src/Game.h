@@ -77,7 +77,7 @@ namespace cagesim
             }
         }
 
-        //GameData gameData;
+        GameData gameData;
 
     private:
         Game() {}
@@ -86,7 +86,7 @@ namespace cagesim
         std::vector<Player> players;
 
         size_t t; // round counter
-        GameData gameData;
+//        GameData gameData;
 
 //        void initNextRoundGameData()
 //        {
