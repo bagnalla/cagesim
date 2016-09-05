@@ -6,11 +6,12 @@
 #include <vector>
 #include <LightSource.h>
 #include <Shader.h>
-#include "Puddi.h"
 #include "Camera.h"
 #include "Cube.h"
 #include "CongestionStrategy.h"
 #include "Game.h"
+#include "Plot.h"
+#include "Puddi.h"
 
 #define NUM_PLAYERS 6
 #define NUM_RESOURCES 6
