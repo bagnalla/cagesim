@@ -34,9 +34,9 @@ namespace cagesim
                 float c = 0.0f;
 
                 strat += 1;
-                std::vector<bool> resources;
+                std::vector<bool> resources(numResources);
                 for (size_t i = 0; i < numResources; ++i) {
-                    resources.push_back(static_cast<bool>(strat & (1 << i)));
+                    resources[i] = static_cast<bool>(strat & (1 << i));
                     c += resources[i];
                 }
 

@@ -38,7 +38,8 @@ namespace cagesim
             acc += p;
         }
 
-        throw std::runtime_error("player " + std::to_string(id) + " unable to choose a strategy.");
+        throw std::runtime_error("player " + std::to_string(id) + " unable to choose a strategy." +
+                                 " r = " + std::to_string(r) + ", acc = " + std::to_string(acc));
     }
 
     void Player::Update(const std::vector<size_t>& s, GameData& gd)
@@ -50,8 +51,8 @@ namespace cagesim
             weights[i] *= pow(1.0 - epsilon, c);
 
             // update gameData with cost and weight
-            auto dfgdfg = gd.strategyCosts.size();
-            assert(0 < gd.strategyCosts.size() && gd.strategyCosts.size() < UINT32_MAX);
+            //auto dfgdfg = gd.strategyCosts.size();
+            //assert(0 < gd.strategyCosts.size() && gd.strategyCosts.size() < UINT32_MAX);
             gd.strategyCosts[gd.strategyCosts.size() - 1][id][i] = c;
             gd.strategyWeights[gd.strategyCosts.size() - 1][id][i] = static_cast<float>(weights[i]);
         }
