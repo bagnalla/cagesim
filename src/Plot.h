@@ -19,94 +19,105 @@ namespace cagesim
     class Plot : public puddi::DrawableObject
     {
     public:
-        Plot(puddi::Object *par, size_t nData) : puddi::DrawableObject(par, createVertexMesh())
+        Plot(puddi::Object *par, size_t nData) : puddi::DrawableObject(par)
         {
             data = std::vector<float>(nData);
-            allocateVertexData();
+
+            vertexMeshes.push_back(createVertexMesh());
+            updateRenderNodes();
         }
 
         void SetData(const std::vector<float>& d)
         {
             assert (d.size() == data.size());
             data = d;
+            updateVertexData();
         }
+
     private:
         std::vector<float> data;
         size_t vertexOffset;
-        size_t indexOffset;
-        size_t indexCount;
 
-        puddi::VertexMesh createVertexMesh()
+        puddi::VertexMesh* createVertexMesh()
         {
-            return puddi::VertexMesh();
+            // index offset, index count pair
+            auto index_count = allocateVertexData();
+
+            return new puddi::VertexMesh(this, puddi::Material::None(), index_count.first, index_count.second, true);
         }
 
-        void allocateVertexData()
+        puddi::VertexData createInitialVertexData()
+        {
+            puddi::VertexData vData;
+
+            // top vertices
+            for (size_t i = 0; i < data.size(); ++i) {
+                vData.vertices.push_back(vec4(static_cast<float>(i) / data.size(), data[i], 0.0f, 1.0f));
+            }
+
+            // bottom vertices
+            for (size_t i = 0; i < data.size(); ++i) {
+                vData.vertices.push_back(vec4(static_cast<float>(i) / data.size(), 0.0f, 0.0f, 1.0f));
+            }
+
+            // same for all
+            for (size_t i = 0; i < data.size() * 2; ++i) {
+                vData.normals.push_back(vec4(0.0f, 0.0f, -1.0f, 0.0f));
+            }
+            for (size_t i = 0; i < data.size() * 2; ++i) {
+                vData.tangents.push_back(vec4(1.0f, 0.0f, 0.0f, 0.0f));
+            }
+            for (size_t i = 0; i < data.size() * 2; ++i) {
+                vData.binormals.push_back(vec4(0.0f, -1.0f, 0.0f, 0.0f));
+            }
+            vData.textureCoordinates = std::vector<vec2>(data.size() * 2);
+            vData.boneIndices = vData.boneWeights = std::vector<vec4>(data.size() * 2, vec4(-1, -1, -1, -1));
+
+            return vData;
+        }
+
+        // only call once at Plot creation
+        // returns (index offset, index count) pair
+        std::pair<size_t, size_t> allocateVertexData()
         {
             vertexOffset = puddi::Shader::Vertices.size();
-            indexOffset = puddi::Shader::VertexIndices.size();
-            indexCount = data.size();
+            size_t indexOffset = puddi::Shader::VertexIndices.size();
 
-            std::vector<vec4> vertices;
-            for (size_t i = 0; i < data.size(); ++i) {
-                vertices.push_back(vec4(data[i], 1.0f / data.size(), 0.0f, 1.0f));
-            }
-            std::vector<vec4> normals;
-            for (size_t i = 0; i < data.size(); ++i) {
-                auto norm = normalize(vec3(vertices[i].x, vertices[i].y, vertices[i].z));
-                normals.push_back(vec4(norm.x, norm.y, norm.z, 0.0f));
-            }
-            std::vector<vec4> tangents;
-            for (size_t i = 0; i < data.size(); ++i) {
-                tangents.push_back(puddi::Util::RotateZ(-M_PI / 2.0f) * normals[i]);
-            }
-            std::vector<vec4> binormals;
-            for (size_t i = 0; i < data.size(); ++i) {
-                auto crossP = cross(vec3(normals[i].x, normals[i].y, normals[i].z),
-                                    vec3(tangents[i].x, tangents[i].y, tangents[i].z));
-                binormals.push_back(vec4(crossP.x, crossP.y, crossP.z, 0.0f));
-            }
+            // create vertex data
+            puddi::VertexData vData = createInitialVertexData();
 
-            std::vector<vec2> texCoords = std::vector<vec2>(data.size());
-            std::vector<vec4> boneData = std::vector<vec4>(data.size(), vec4(-1, -1, -1, -1));
+            puddi::Shader::Vertices.insert(puddi::Shader::Vertices.end(), vData.vertices.begin(), vData.vertices.end());
+            puddi::Shader::Normals.insert(puddi::Shader::Normals.end(), vData.normals.begin(), vData.normals.end());
+            puddi::Shader::Tangents.insert(puddi::Shader::Tangents.end(), vData.tangents.begin(), vData.tangents.end());
+            puddi::Shader::Binormals.insert(puddi::Shader::Binormals.end(), vData.binormals.begin(),
+                                            vData.binormals.end());
+            puddi::Shader::TextureCoordinates.insert(puddi::Shader::TextureCoordinates.end(),
+                                                     vData.textureCoordinates.begin(), vData.textureCoordinates.end());
+            puddi::Shader::BoneIndices.insert(puddi::Shader::BoneIndices.end(), vData.boneIndices.begin(),
+                                              vData.boneIndices.end());
+            puddi::Shader::BoneWeights.insert(puddi::Shader::BoneWeights.end(), vData.boneWeights.begin(),
+                                              vData.boneWeights.end());
 
+            // create indices
             std::vector<size_t> indices;
-            for (size_t i = 0; i < indexCount; ++i)
+            for (size_t i = 0; i < data.size(); ++i) {
+                indices.push_back(vertexOffset + data.size() + i);
                 indices.push_back(vertexOffset + i);
+            }
 
             puddi::Shader::VertexIndices.insert(puddi::Shader::VertexIndices.end(), indices.begin(), indices.end());
 
-            puddi::Shader::TextureCoordinates.insert(puddi::Shader::TextureCoordinates.end(), texCoords.begin(), texCoords.end());
-            puddi::Shader::BoneIndices.insert(puddi::Shader::BoneIndices.end(), boneData.begin(), boneData.end());
-            puddi::Shader::BoneWeights.insert(puddi::Shader::BoneWeights.end(), boneData.begin(), boneData.end());
+            return std::make_pair(indexOffset, indices.size());
         }
 
         void updateVertexData()
         {
             std::vector<vec4> vertices;
             for (size_t i = 0; i < data.size(); ++i) {
-                vertices.push_back(vec4(data[i], 1.0f / data.size(), 0.0f, 1.0f));
-            }
-            std::vector<vec4> normals;
-            for (size_t i = 0; i < data.size(); ++i) {
-                auto norm = normalize(vec3(vertices[i].x, vertices[i].y, vertices[i].z));
-                normals.push_back(vec4(norm.x, norm.y, norm.z, 0.0f));
-            }
-            std::vector<vec4> tangents;
-            for (size_t i = 0; i < data.size(); ++i) {
-                tangents.push_back(puddi::Util::RotateZ(-M_PI / 2.0f) * normals[i]);
-            }
-            std::vector<vec4> binormals;
-            for (size_t i = 0; i < data.size(); ++i) {
-                auto crossP = cross(vec3(normals[i].x, normals[i].y, normals[i].z),
-                                    vec3(tangents[i].x, tangents[i].y, tangents[i].z));
-                binormals.push_back(vec4(crossP.x, crossP.y, crossP.z, 0.0f));
+                vertices.push_back(vec4(static_cast<float>(i) / data.size(), data[i], 0.0f, 1.0f));
             }
 
-            puddi::Shader::Vertices.insert(puddi::Shader::Vertices.end(), vertices.begin(), vertices.end());
-            puddi::Shader::Normals.insert(puddi::Shader::Normals.end(), normals.begin(), normals.end());
-            puddi::Shader::Tangents.insert(puddi::Shader::Tangents.end(), tangents.begin(), tangents.end());
-            puddi::Shader::Binormals.insert(puddi::Shader::Binormals.end(), binormals.begin(), binormals.end());
+            puddi::Shader::UpdateVertexPositions(vertexOffset, vertices);
         }
     };
 }

@@ -74,6 +74,7 @@ void runSim(cagesim::GameData& averageData)
 std::thread simThread (runSim, std::ref(averageData));
 
 Cube *cube;
+cagesim::Plot *plot;
 
 void init()
 {
@@ -94,19 +95,43 @@ void init()
                          vec4(-2.5f, 5.0f, -5.0f, 0.0f)); // position
     Shader::SetOrthoLightSource(hudLight);
 
-    cube = new Cube(engine::GetRootObject());
-//    cube->SetEmissive(true);
-//    cube->SetEmissionColor(vec4(1.0f, 0.0f, 0.0f, 1.0f));
-    cube->SetMaterial(Material::RedRubber());
-    //cube->SetIsHUDElement(true);
-    cube->Translate(vec4(0.0f, 5.0f, 0.0f, 0.0f));
-//    cube->RotateX(0.1f);
-//    cube->RotateY(0.1f);
+//    cube = new Cube(engine::GetRootObject());
+////    cube->SetEmissive(true);
+////    cube->SetEmissionColor(vec4(1.0f, 0.0f, 0.0f, 1.0f));
+//    cube->SetMaterial(Material::RedRubber());
+//    cube->SetIsHUDElement(true);
+//    //cube->Translate(vec4(0.0f, 5.0f, 0.0f, 0.0f));
+////    cube->RotateX(0.1f);
+////    cube->RotateY(0.1f);
+
+    plot = new cagesim::Plot(puddi::engine::GetRootObject(), 63);
+    plot->SetIsHUDElement(true);
+    //plot->SetEmissive(true);
+    plot->SetEmissionColor(vec4(1.0f, 0.0f, 0.0f, 1.0f));
+    plot->SetMaterial(Material::RedRubber());
+    plot->Translate(vec4(-0.5f, -0.5f, 0.0f, 0.0f));
+}
+
+void postInit()
+{
+    //plot->SetData(std::vector<float>(10, 1.0f));
+    //plot->SetData(averageData.strategyWeights[averageData.strategyWeights.size() - 1][0]);
 }
 
 bool holdingMouseClick = false;
 int update()
 {
+    float weight_sum = 0.0f;
+    for (size_t i = 0; i < averageData.strategyWeights[averageData.strategyWeights.size() - 1][0].size(); ++i) {
+        weight_sum += averageData.strategyWeights[averageData.strategyWeights.size() - 1][0][i];
+    }
+    std::vector<float> dist;
+    for (size_t i = 0; i < averageData.strategyWeights[averageData.strategyWeights.size() - 1][0].size(); ++i) {
+        dist.push_back(averageData.strategyWeights[averageData.strategyWeights.size() - 1][0][i] / weight_sum);
+    }
+    plot->SetData(dist);
+    //plot->SetData(averageData.strategyWeights[averageData.strategyWeights.size() - 1][0]);
+
     SDL_Event ev;
     while (SDL_PollEvent(&ev))
     {
@@ -144,22 +169,22 @@ int update()
                 case SDLK_EQUALS:
                     break;
                 case SDLK_1:
-                    cube->RotateX(-0.1f);
+                    plot->RotateX(-0.1f);
                     break;
                 case SDLK_2:
-                    cube->RotateX(0.1f);
+                    plot->RotateX(0.1f);
                     break;
                 case SDLK_3:
-                    cube->RotateY(-0.1f);
+                    plot->RotateY(-0.1f);
                     break;
                 case SDLK_4:
-                    cube->RotateY(0.1f);
+                    plot->RotateY(0.1f);
                     break;
                 case SDLK_5:
-                    cube->RotateZ(-0.1f);
+                    plot->RotateZ(-0.1f);
                     break;
                 case SDLK_6:
-                    cube->RotateZ(0.1f);
+                    plot->RotateZ(0.1f);
                     break;
             }
         }
@@ -205,6 +230,8 @@ int main()
 
     //std::thread simThread (runSim, std::ref(averageData));
     init();
+
+    engine::RegisterPostInitFunction(postInit);
 
     engine::RegisterUpdateFunction(update);
 
