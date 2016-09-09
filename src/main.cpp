@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
+#include <mutex>
 #include <thread>
 #include <vector>
 #include <LightSource.h>
@@ -9,18 +10,20 @@
 #include "Camera.h"
 #include "Cube.h"
 #include "CongestionStrategy.h"
+#include "Font.h"
 #include "Game.h"
 #include "Plot.h"
 #include "Puddi.h"
 
-#define NUM_PLAYERS 6
-#define NUM_RESOURCES 6
-#define NUM_GAMES 8
+#define NUM_PLAYERS 10
+#define NUM_RESOURCES 10
+#define NUM_GAMES 1
 #define NUM_ROUNDS 1000
 
 using namespace puddi;
 
 cagesim::GameData averageData;
+std::mutex averageDataMutex;
 bool simRunning = true;
 
 void mergeData(const std::vector<cagesim::Game> games, cagesim::GameData *data)
@@ -63,6 +66,8 @@ void runSim(cagesim::GameData& averageData)
             games[j].Next();
         }
 
+        std::lock_guard<std::mutex> guard(averageDataMutex);
+
         averageData.AddRound(NUM_PLAYERS, strat->GetNumStrategies());
         if (simRunning) {
             mergeData(games, &averageData);
@@ -75,6 +80,7 @@ std::thread simThread (runSim, std::ref(averageData));
 
 Cube *cube;
 cagesim::Plot *plot;
+DrawableObject *textContainer;
 
 void init()
 {
@@ -104,12 +110,28 @@ void init()
 ////    cube->RotateX(0.1f);
 ////    cube->RotateY(0.1f);
 
-    plot = new cagesim::Plot(puddi::engine::GetRootObject(), 63);
+    plot = new cagesim::Plot(puddi::engine::GetRootObject(), pow(2, NUM_RESOURCES) - 1);
     plot->SetIsHUDElement(true);
     //plot->SetEmissive(true);
-    plot->SetEmissionColor(vec4(1.0f, 0.0f, 0.0f, 1.0f));
+    //plot->SetEmissionColor(vec4(1.0f, 0.0f, 0.0f, 1.0f));
     plot->SetMaterial(Material::RedRubber());
-    plot->Translate(vec4(-0.5f, -0.5f, 0.0f, 0.0f));
+    plot->Translate(vec4(-0.75f, -0.75f, 0.0f, 0.0f));
+    plot->SetScale(1.5f);
+
+    //textContainer = new DrawableObject(puddi::engine::GetRootObject());
+    textContainer = new Cube(puddi::engine::GetRootObject());
+    auto glyphs = puddi::Font::CreateGlyphString(textContainer, "myfont", "testerino");
+    for_each(glyphs.begin(), glyphs.end(), [&](DrawableObject *g)
+    {
+        g->Translate(vec4(g->GetScaleX() / 2.0f - (g->GetScaleX() * glyphs.size()) / 2.0f, -0.51f, 0.0f, 0.0f));
+    });
+    textContainer->SetIsHUDElement(true);
+    textContainer->SetEmissive(true);
+    textContainer->SetEmissionColor(vec4(1.0f, 0.0f, 0.0f, 1.0f));
+    textContainer->SetMaterial(puddi::Material::RedRubber());
+    textContainer->SetScale(0.1f);
+    textContainer->RotateX(M_PI / 2.0f);
+    //textContainer->Translate(vec4(-0.5f, -0.5f, 0.0f, 0.0f));
 }
 
 void postInit()
@@ -121,15 +143,21 @@ void postInit()
 bool holdingMouseClick = false;
 int update()
 {
-    float weight_sum = 0.0f;
-    for (size_t i = 0; i < averageData.strategyWeights[averageData.strategyWeights.size() - 1][0].size(); ++i) {
-        weight_sum += averageData.strategyWeights[averageData.strategyWeights.size() - 1][0][i];
+    {
+        std::lock_guard<std::mutex> guard(averageDataMutex);
+
+        if (averageData.strategyWeights.size() > 0) {
+            float weight_sum = 0.0f;
+            for (size_t i = 0; i < averageData.strategyWeights[averageData.strategyWeights.size() - 1][0].size(); ++i) {
+                weight_sum += averageData.strategyWeights[averageData.strategyWeights.size() - 1][0][i];
+            }
+            std::vector<float> dist;
+            for (size_t i = 0; i < averageData.strategyWeights[averageData.strategyWeights.size() - 1][0].size(); ++i) {
+                dist.push_back(averageData.strategyWeights[averageData.strategyWeights.size() - 1][0][i] / weight_sum);
+            }
+            plot->SetData(dist);
+        }
     }
-    std::vector<float> dist;
-    for (size_t i = 0; i < averageData.strategyWeights[averageData.strategyWeights.size() - 1][0].size(); ++i) {
-        dist.push_back(averageData.strategyWeights[averageData.strategyWeights.size() - 1][0][i] / weight_sum);
-    }
-    plot->SetData(dist);
     //plot->SetData(averageData.strategyWeights[averageData.strategyWeights.size() - 1][0]);
 
     SDL_Event ev;
@@ -169,22 +197,22 @@ int update()
                 case SDLK_EQUALS:
                     break;
                 case SDLK_1:
-                    plot->RotateX(-0.1f);
+                    textContainer->RotateX(-0.1f);
                     break;
                 case SDLK_2:
-                    plot->RotateX(0.1f);
+                    textContainer->RotateX(0.1f);
                     break;
                 case SDLK_3:
-                    plot->RotateY(-0.1f);
+                    textContainer->RotateY(-0.1f);
                     break;
                 case SDLK_4:
-                    plot->RotateY(0.1f);
+                    textContainer->RotateY(0.1f);
                     break;
                 case SDLK_5:
-                    plot->RotateZ(-0.1f);
+                    textContainer->RotateZ(-0.1f);
                     break;
                 case SDLK_6:
-                    plot->RotateZ(0.1f);
+                    textContainer->RotateZ(0.1f);
                     break;
             }
         }

@@ -5,6 +5,7 @@
 #ifndef CAGESIM_PLOT_H
 #define CAGESIM_PLOT_H
 
+#include <algorithm>
 #include <cassert>
 #include <vector>
 #include "DrawableObject.h"
@@ -112,12 +113,15 @@ namespace cagesim
 
         void updateVertexData()
         {
-            std::vector<vec4> vertices;
-            for (size_t i = 0; i < data.size(); ++i) {
-                vertices.push_back(vec4(static_cast<float>(i) / data.size(), data[i], 0.0f, 1.0f));
-            }
+            auto max = std::max_element(data.begin(), data.end());
+            if (max != data.end()) {
+                std::vector<vec4> vertices;
+                for (size_t i = 0; i < data.size(); ++i) {
+                    vertices.push_back(vec4(static_cast<float>(i) / data.size(), data[i] / *max, 0.0f, 1.0f));
+                }
 
-            puddi::Shader::UpdateVertexPositions(vertexOffset, vertices);
+                puddi::Shader::UpdateVertexPositions(vertexOffset, vertices);
+            }
         }
     };
 }
