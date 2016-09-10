@@ -9,6 +9,7 @@
 #include <iostream>
 #include <stdexcept>
 #include "Game.h"
+#include "Strategy.h"
 
 namespace cagesim
 {

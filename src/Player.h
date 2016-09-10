@@ -7,11 +7,11 @@
 
 #include <functional>
 #include <vector>
-#include "Strategy.h"
 
 namespace cagesim
 {
     class GameData;
+    class Strategy;
 
     class Player
     {

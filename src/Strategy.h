@@ -5,6 +5,8 @@
 #ifndef CAGESIM_STRATEGY_H
 #define CAGESIM_STRATEGY_H
 
+#include "Game.h"
+
 namespace cagesim
 {
     class Strategy
@@ -14,6 +16,7 @@ namespace cagesim
         size_t GetNumPlayers() const { return numPlayers; }
         size_t GetNumStrategies() const { return numStrategies; }
         virtual std::function<float(size_t, size_t, const std::vector<size_t>&)> GetCostFunction() const = 0;
+        virtual void AddData(const GameData& d) = 0;
     protected:
         size_t numPlayers;
         size_t numStrategies;
