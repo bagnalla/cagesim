@@ -16,13 +16,13 @@ namespace cagesim
     class Player
     {
     public:
-        Player(size_t i, float e, Strategy *strat);
-        size_t ChooseStrategy() const;
-        void Update(const std::vector<size_t>& s, GameData& gd);
+        Player(uint i, double e, Strategy *strat);
+        uint ChooseStrategy() const;
+        void Update(const std::vector<uint>& s, GameData& gd);
         void PrintDist() const;
     private:
-        size_t id;
-        float epsilon;
+        uint id;
+        double epsilon;
         Strategy *strategy;
         std::vector<double> weights;
     };

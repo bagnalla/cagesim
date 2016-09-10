@@ -17,7 +17,7 @@ namespace cagesim
     {
         // per round, per player, per strategy
         std::vector<std::vector<std::vector<float>>> strategyCosts;
-        std::vector<std::vector<std::vector<float>>> strategyWeights;
+        std::vector<std::vector<std::vector<double>>> strategyWeights;
 
         void AddRound(size_t numPlayers, size_t numStrategies);
     };

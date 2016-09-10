@@ -17,10 +17,10 @@ namespace cagesim
             *it = (std::vector<float>(numStrategies));
         }
 
-        strategyWeights.push_back(std::vector<std::vector<float> >(numPlayers));
-        round = &strategyWeights[strategyWeights.size() - 1];
-        for (auto it = round->begin(); it != round->end(); ++it) {
-            *it = (std::vector<float>(numStrategies));
+        strategyWeights.push_back(std::vector<std::vector<double> >(numPlayers));
+        auto roundD = &strategyWeights[strategyWeights.size() - 1];
+        for (auto it = roundD->begin(); it != roundD->end(); ++it) {
+            *it = (std::vector<double>(numStrategies));
         }
     }
 
@@ -29,7 +29,7 @@ namespace cagesim
     Game::Game(Strategy *strat, float e)
     {
         strategy = strat;
-        for (size_t i = 0; i < strat->GetNumPlayers(); ++i) {
+        for (uint i = 0; i < strat->GetNumPlayers(); ++i) {
             players.push_back(Player(i, e, strat));
         }
         t = 0;
@@ -40,7 +40,7 @@ namespace cagesim
 
     void Game::Next()
     {
-        std::vector<size_t> s(players.size());
+        std::vector<uint> s(players.size());
 
         for (size_t i = 0; i < players.size(); ++i) {
             s[i] = players[i].ChooseStrategy();

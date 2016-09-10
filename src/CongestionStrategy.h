@@ -15,20 +15,20 @@ namespace cagesim
 {
     struct CongestionData
     {
-        std::vector<std::vector<std::vector<float>>> resourceWeights;
+        std::vector<std::vector<std::vector<double>>> resourceWeights;
         std::vector<std::vector<std::vector<float>>> resourceProbs;
         std::vector<std::vector<std::vector<float>>> resourceExpectedNumPlayers;
 
         void AddRound(size_t numPlayers, size_t numResources)
         {
-            resourceWeights.push_back(std::vector<std::vector<float> >(numPlayers));
-            auto round = &resourceWeights[resourceWeights.size() - 1];
-            for (auto it = round->begin(); it != round->end(); ++it) {
-                *it = (std::vector<float>(numResources));
+            resourceWeights.push_back(std::vector<std::vector<double> >(numPlayers));
+            auto roundD = &resourceWeights[resourceWeights.size() - 1];
+            for (auto it = roundD->begin(); it != roundD->end(); ++it) {
+                *it = (std::vector<double>(numResources));
             }
 
             resourceProbs.push_back(std::vector<std::vector<float> >(numPlayers));
-            round = &resourceProbs[resourceProbs.size() - 1];
+            auto round = &resourceProbs[resourceProbs.size() - 1];
             for (auto it = round->begin(); it != round->end(); ++it) {
                 *it = (std::vector<float>(numResources));
             }
@@ -52,7 +52,7 @@ namespace cagesim
             max_cost = numResources * nPlayers;
         }
 
-        std::function<float(size_t, size_t, const std::vector<size_t> &)> GetCostFunction() const
+        std::function<float(uint, uint, const std::vector<uint> &)> GetCostFunction() const
         { return cost; }
 
         void AddData(const GameData &d)
@@ -61,7 +61,7 @@ namespace cagesim
 
             size_t latest_d_round = d.strategyWeights.size() - 1;
             size_t current_round = cData.resourceWeights.size() - 1;
-            std::vector<float> weight_sums = std::vector<float>(numPlayers, 0.0f);
+            std::vector<double> weight_sums = std::vector<double>(numPlayers, 0.0);
 
             // resource weights
             if (latest_d_round >= 0) {
@@ -88,7 +88,7 @@ namespace cagesim
                     // per resource
                     for (size_t j = 0; j < cData.resourceProbs[current_round][i].size(); ++j) {
                         cData.resourceProbs[current_round][i][j] =
-                                cData.resourceWeights[current_round][i][j] / weight_sums[i];
+                                static_cast<float>(cData.resourceWeights[current_round][i][j] / weight_sums[i]);
                     }
                 }
             }
@@ -111,21 +111,31 @@ namespace cagesim
     private:
         size_t numResources;
 
-        std::function<float(size_t, size_t, const std::vector<size_t> &)> cost =
-                [this](size_t id, size_t strat, const std::vector<size_t> &s) {
+        std::function<float(uint, uint, const std::vector<uint> &)> cost =
+                [this](uint id, uint strat, const std::vector<uint> &s) {
                     float c = 0.0f;
 
+                    // no empty strategy, so strat 0 is 1, etc
                     strat += 1;
+
+                    // resources in the strategy (reverse order)
+                    // true if resource in strategy, false if not
                     std::vector<bool> resources(numResources);
-                    for (size_t i = 0; i < numResources; ++i) {
+                    for (uint i = 0; i < numResources; ++i) {
                         resources[i] = static_cast<bool>(strat & (1 << i));
+
+                        // if resource is used, add the basic cost of using it
                         c += resources[i];
                     }
 
+                    // for each player strategy
                     for (size_t i = 0; i < s.size(); ++i) {
+                        // skip ours
                         if (i != id) {
-                            for (size_t j = 0; j < numResources; ++j) {
-                                c += resources[j] * ((s[i] + 1) & (1 << j)) != 0;
+                            // for each resource
+                            for (uint j = 0; j < numResources; ++j) {
+
+                                c += (resources[j] * ((s[i] + 1) & (1 << j))) != 0;
                             }
                         }
                     }

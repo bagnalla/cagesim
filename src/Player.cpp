@@ -13,7 +13,7 @@
 
 namespace cagesim
 {
-    Player::Player(size_t i, float e, Strategy *strat)
+    Player::Player(uint i, double e, Strategy *strat)
     {
         id = i;
         epsilon = e;
@@ -21,17 +21,17 @@ namespace cagesim
         weights = std::vector<double>(strat->GetNumStrategies(), 1.0f);
     }
 
-    size_t Player::ChooseStrategy() const
+    uint Player::ChooseStrategy() const
     {
         double sum_weights = 0.0;
         for (size_t i = 0; i < weights.size(); ++i) {
             sum_weights += weights[i];
         }
 
-        float r = static_cast<float>(std::rand()) / RAND_MAX;
-        float acc = 0.0f;
+        double r = static_cast<double>(std::rand()) / RAND_MAX;
+        double acc = 0.0;
 
-        for (size_t i = 0; i < weights.size(); ++i) {
+        for (uint i = 0; i < weights.size(); ++i) {
             double p = weights[i] / sum_weights;
             if (acc <= r && r <= acc + p) {
                 return i;
@@ -43,11 +43,11 @@ namespace cagesim
                                  " r = " + std::to_string(r) + ", acc = " + std::to_string(acc));
     }
 
-    void Player::Update(const std::vector<size_t>& s, GameData& gd)
+    void Player::Update(const std::vector<uint>& s, GameData& gd)
     {
         auto costFun = strategy->GetCostFunction();
 
-        for (size_t i = 0; i < weights.size(); ++i) {
+        for (uint i = 0; i < weights.size(); ++i) {
             auto c = costFun(id, i, s);
             weights[i] *= pow(1.0 - epsilon, c);
 
@@ -55,7 +55,7 @@ namespace cagesim
             //auto dfgdfg = gd.strategyCosts.size();
             //assert(0 < gd.strategyCosts.size() && gd.strategyCosts.size() < UINT32_MAX);
             gd.strategyCosts[gd.strategyCosts.size() - 1][id][i] = c;
-            gd.strategyWeights[gd.strategyCosts.size() - 1][id][i] = static_cast<float>(weights[i]);
+            gd.strategyWeights[gd.strategyCosts.size() - 1][id][i] = weights[i];
         }
     }
 

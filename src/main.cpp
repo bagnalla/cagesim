@@ -15,16 +15,18 @@
 #include "Plot.h"
 #include "Puddi.h"
 
-#define NUM_PLAYERS 10
-#define NUM_RESOURCES 10
+#define NUM_PLAYERS 4
+#define NUM_RESOURCES 4
 #define NUM_GAMES 1
-#define NUM_ROUNDS 1000
+#define NUM_ROUNDS 5
 
 using namespace puddi;
 
 cagesim::GameData averageData;
 std::mutex averageDataMutex;
 bool simRunning = true;
+int display_round = 0;
+bool lock_display_round_to_latest = true;
 
 void mergeData(const std::vector<cagesim::Game> games, cagesim::GameData *data)
 {
@@ -71,6 +73,9 @@ void runSim(cagesim::GameData& averageData)
         averageData.AddRound(NUM_PLAYERS, strat->GetNumStrategies());
         if (simRunning) {
             mergeData(games, &averageData);
+            if (lock_display_round_to_latest) {
+                display_round = static_cast<int>(averageData.strategyCosts.size()) - 1;
+            }
         }
     }
     std::cout << "end" << std::endl;
@@ -112,26 +117,25 @@ void init()
 
     plot = new cagesim::Plot(puddi::engine::GetRootObject(), pow(2, NUM_RESOURCES) - 1);
     plot->SetIsHUDElement(true);
-    //plot->SetEmissive(true);
-    //plot->SetEmissionColor(vec4(1.0f, 0.0f, 0.0f, 1.0f));
-    plot->SetMaterial(Material::RedRubber());
-    plot->Translate(vec4(-0.75f, -0.75f, 0.0f, 0.0f));
-    plot->SetScale(1.5f);
+    plot->SetEmissive(true);
+    plot->SetEmissionColor(vec4(1.0f, 0.0f, 0.0f, 1.0f));
+    //plot->SetMaterial(Material::RedRubber());
+    plot->Translate(vec4(-0.95f, -0.95f, 0.0f, 0.0f));
+    plot->SetScale(1.9f);
 
-    //textContainer = new DrawableObject(puddi::engine::GetRootObject());
-    textContainer = new Cube(puddi::engine::GetRootObject());
-    auto glyphs = puddi::Font::CreateGlyphString(textContainer, "myfont", "testerino");
-    for_each(glyphs.begin(), glyphs.end(), [&](DrawableObject *g)
-    {
-        g->Translate(vec4(g->GetScaleX() / 2.0f - (g->GetScaleX() * glyphs.size()) / 2.0f, -0.51f, 0.0f, 0.0f));
-    });
-    textContainer->SetIsHUDElement(true);
-    textContainer->SetEmissive(true);
-    textContainer->SetEmissionColor(vec4(1.0f, 0.0f, 0.0f, 1.0f));
-    textContainer->SetMaterial(puddi::Material::RedRubber());
-    textContainer->SetScale(0.1f);
-    textContainer->RotateX(M_PI / 2.0f);
-    //textContainer->Translate(vec4(-0.5f, -0.5f, 0.0f, 0.0f));
+//    //textContainer = new DrawableObject(puddi::engine::GetRootObject());
+//    textContainer = new Cube(puddi::engine::GetRootObject());
+//    auto glyphs = puddi::Font::CreateGlyphString(textContainer, "myfont", "testerino");
+//    for_each(glyphs.begin(), glyphs.end(), [&](DrawableObject *g)
+//    {
+//        g->Translate(vec4(g->GetScaleX() / 2.0f - (g->GetScaleX() * glyphs.size()) / 2.0f, -0.51f, 0.0f, 0.0f));
+//    });
+//    textContainer->SetIsHUDElement(true);
+//    textContainer->SetEmissive(true);
+//    textContainer->SetEmissionColor(vec4(1.0f, 0.0f, 0.0f, 1.0f));
+//    textContainer->SetMaterial(puddi::Material::RedRubber());
+//    textContainer->SetScale(0.1f);
+//    textContainer->RotateX(M_PI / 2.0f);
 }
 
 void postInit()
@@ -147,13 +151,13 @@ int update()
         std::lock_guard<std::mutex> guard(averageDataMutex);
 
         if (averageData.strategyWeights.size() > 0) {
-            float weight_sum = 0.0f;
-            for (size_t i = 0; i < averageData.strategyWeights[averageData.strategyWeights.size() - 1][0].size(); ++i) {
-                weight_sum += averageData.strategyWeights[averageData.strategyWeights.size() - 1][0][i];
+            double weight_sum = 0.0;
+            for (size_t i = 0; i < averageData.strategyWeights[display_round][0].size(); ++i) {
+                weight_sum += averageData.strategyWeights[display_round][0][i];
             }
             std::vector<float> dist;
-            for (size_t i = 0; i < averageData.strategyWeights[averageData.strategyWeights.size() - 1][0].size(); ++i) {
-                dist.push_back(averageData.strategyWeights[averageData.strategyWeights.size() - 1][0][i] / weight_sum);
+            for (size_t i = 0; i < averageData.strategyWeights[display_round][0].size(); ++i) {
+                dist.push_back(static_cast<float>(averageData.strategyWeights[display_round][0][i] / weight_sum));
             }
             plot->SetData(dist);
         }
@@ -214,6 +218,21 @@ int update()
                 case SDLK_6:
                     textContainer->RotateZ(0.1f);
                     break;
+                case SDLK_l:
+                    lock_display_round_to_latest = !lock_display_round_to_latest;
+                    break;
+                case SDLK_LEFT:
+                    if (!lock_display_round_to_latest) {
+                        display_round = max(0, display_round - 1);
+                    }
+                    break;
+                case SDLK_RIGHT:
+                    if (!lock_display_round_to_latest) {
+                        display_round = min(static_cast<int>(averageData.strategyCosts.size()) - 1, display_round + 1);
+                    }
+                    break;
+                default:
+                    break;
             }
         }
             // mouse click
@@ -255,6 +274,8 @@ int main()
 //              " ms" << std::endl;
     if (int initStatus = engine::Init(100.0f) != 0)
         return initStatus;
+
+    //puddi::engine::SetClearColor(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
     //std::thread simThread (runSim, std::ref(averageData));
     init();
